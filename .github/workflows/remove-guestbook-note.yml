@@ -1,0 +1,35 @@
+name: Remove Guestbook Footer Note
+on:
+  push:
+    paths:
+      - '.github/workflows/remove-guestbook-note.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove footer note
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          targets=[
+            '<div class="guestNotice">Buku tamu publik sedang disiapkan. Tidak ada tautan ke akun GitHub pribadi.</div>',
+            '<p class="guestNotice">Buku tamu publik sedang disiapkan. Tidak ada tautan ke akun GitHub pribadi.</p>',
+            'Buku tamu publik sedang disiapkan. Tidak ada tautan ke akun GitHub pribadi.'
+          ]
+          for x in targets:
+            s=s.replace(x,'')
+          p.write_text(s)
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet || git commit -m 'Remove GitHub note from guestbook'
+          git push
