@@ -1,0 +1,40 @@
+name: Upgrade Guestbook and Gold
+on:
+  push:
+    paths:
+      - '.github/workflows/upgrade-guestbook-gold.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          # Gold border: remove white/silver stops and white glow.
+          s=s.replace('box-shadow:0 0 8px #fffbd4,0 0 25px #f1b70075,0 12px 30px #000','box-shadow:0 0 8px #b87300,0 0 25px #f1b70075,0 12px 30px #000')
+          s=s.replace('background:conic-gradient(from 0deg,#6f3d00 0deg,#ffbf00 42deg,#fffbd4 72deg,#c57800 105deg,#fff 132deg,#f1b700 166deg,#6f3d00 205deg,#ffe16b 250deg,#fff 285deg,#9b5c00 330deg,#6f3d00 360deg)','background:conic-gradient(from 0deg,#6f3d00 0deg,#9b5c00 28deg,#d98d00 58deg,#ffe16b 82deg,#f1b700 110deg,#b87300 145deg,#6f3d00 180deg,#d98d00 220deg,#ffe16b 255deg,#f1b700 290deg,#9b5c00 330deg,#6f3d00 360deg)')
+          s=s.replace('box-shadow:inset 0 0 7px #fffbd4,inset 0 0 16px #f1b70088,0 0 18px #ffe16b88','box-shadow:inset 0 0 7px #d98d00,inset 0 0 16px #f1b70088,0 0 18px #ffe16b88')
+          # Add public guestbook styles.
+          marker='@keyframes shine'
+          css='''.guestPublic{margin-top:18px;padding-top:16px;border-top:1px solid #6e4d1d}.guestPublic h4{margin:0 0 10px;font:600 15px Cinzel,serif;color:#e7b936}.guestThread{display:flex;gap:10px;align-items:flex-start;padding:11px;margin:8px 0;border:1px solid #684919;border-radius:12px;background:#0b0804}.guestAvatar{width:34px;height:34px;border-radius:50%;border:1px solid #d99a20}.guestBody{min-width:0;flex:1}.guestMeta{font-size:11px;color:#d7b45b;margin-bottom:4px}.guestText{font-size:13px;line-height:1.55;color:#e7dfd1;white-space:pre-wrap;overflow-wrap:anywhere}.guestActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.guestActions a{text-decoration:none;text-align:center}.guestLoading{font-size:12px;color:#bfae89;padding:10px 0}'''
+          if css not in s: s=s.replace(marker,css+marker)
+          start=s.index('function guest(){')
+          end=s.index("document.addEventListener('click'",start)
+          new="""function esc(v){return String(v??'').replace(/[&<>\\\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\\\"':'&quot;',\"'\":'&#39;'}[c]))}async function loadGuestMessages(){const box=$('#guestMessages');if(!box)return;box.innerHTML='<div class=\\\"guestLoading\\\">Memuat pesan publik…</div>';try{const r=await fetch('https://api.github.com/repos/teguhsriwuryantoro-83/hst-luxury-gallery/issues/1/comments?per_page=30',{headers:{Accept:'application/vnd.github+json'}});if(!r.ok)throw 0;const d=await r.json();box.innerHTML=d.length?d.slice().reverse().map(x=>`<div class=\\\"guestThread\\\"><img class=\\\"guestAvatar\\\" src=\\\"${esc(x.user.avatar_url)}\\\" alt=\\\"\\\"><div class=\\\"guestBody\\\"><div class=\\\"guestMeta\\\">${esc(x.user.login)} • ${new Date(x.created_at).toLocaleString('id-ID')}</div><div class=\\\"guestText\\\">${esc(x.body)}</div></div></div>`).join(''):'<div class=\\\"guestLoading\\\">Belum ada pesan. Jadilah yang pertama meninggalkan kenangan.</div>'}catch(e){box.innerHTML='<div class=\\\"guestLoading\\\">Pesan publik belum dapat dimuat. Gunakan tombol Buka Buku Tamu.</div>'}}function guest(){show(`<div class=\\\"guest\\\"><h3>BUKU TAMU</h3><p>Pesan di sini bersifat publik dan dapat dibaca oleh semua pengunjung.</p><div class=\\\"guestActions\\\"><a class=\\\"btn\\\" target=\\\"_blank\\\" rel=\\\"noopener\\\" href=\\\"https://github.com/teguhsriwuryantoro-83/hst-luxury-gallery/issues/1#new_comment_field\\\">TULIS PESAN</a><button class=\\\"btn\\\" id=\\\"refreshGuest\\\" type=\\\"button\\\">MUAT ULANG</button></div><div class=\\\"guestPublic\\\"><h4>PESAN PENGUNJUNG</h4><div id=\\\"guestMessages\\\"></div></div></div>`);setTimeout(()=>{loadGuestMessages();const b=$('#refreshGuest');if(b)b.onclick=loadGuestMessages},0)}"""
+          s=s[:start]+new+s[end:]
+          p.write_text(s)
+          PY
+      - name: Commit changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet || git commit -m 'Apply pure gold border and public guestbook'
+          git push
