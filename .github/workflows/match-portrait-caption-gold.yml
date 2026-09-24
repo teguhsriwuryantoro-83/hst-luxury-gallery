@@ -1,0 +1,35 @@
+name: Match Portrait Caption Gold
+on:
+  push:
+    paths:
+      - '.github/workflows/match-portrait-caption-gold.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Match caption to LEGENDA gold
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old='.sig,.cap{position:absolute;right:5%;z-index:5;pointer-events:none;font-family:Italianno,cursive;color:#fff2bf;text-shadow:0 0 5px #fff,0 0 13px #ffad00,0 2px 3px #000}'
+          new='.sig,.cap{position:absolute;right:5%;z-index:5;pointer-events:none;font-family:Cinzel,serif;font-weight:600;background:var(--gold);background-size:230% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 7px #ffb000);text-shadow:none;animation:shine 5s linear infinite;letter-spacing:.02em}'
+          if old not in s:
+              raise SystemExit('Target caption CSS not found')
+          s=s.replace(old,new,1)
+          s=s.replace('.sig{bottom:8%;font-size:58px}.cap{bottom:3%;font-size:38px}', '.sig{bottom:8%;font-size:48px}.cap{bottom:3%;font-size:27px}',1)
+          s=s.replace('.sig{font-size:43px}.cap{font-size:29px;white-space:nowrap}', '.sig{font-size:34px}.cap{font-size:20px;white-space:nowrap}',1)
+          p.write_text(s)
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet || git commit -m 'Match portrait caption to Legenda gold style'
+          git push
