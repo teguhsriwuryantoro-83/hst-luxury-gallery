@@ -1,0 +1,32 @@
+name: Remove GitHub Guestbook Redirect
+on:
+  push:
+    paths:
+      - '.github/workflows/remove-github-guestbook.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Keep guestbook fully inside SULE OFFICIAL
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          start=s.index('function esc(') if 'function esc(' in s else s.index('function guest(){')
+          end=s.index("document.addEventListener('click'",start)
+          new=r'''function guest(){show(`<div class="guest"><h3>BUKU TAMU</h3><p>Tinggalkan nama dan pesan untuk SULE OFFICIAL. Anda tetap berada di halaman ini.</p><form id="guestForm"><input id="guestName" required maxlength="60" autocomplete="name" placeholder="Nama Anda"><textarea id="guestMessage" required maxlength="500" placeholder="Pesan / ucapan"></textarea><button class="btn" type="submit">KIRIM PESAN</button><div class="guestNotice" id="guestNotice">Buku tamu publik sedang disiapkan. Tidak ada tautan ke akun GitHub pribadi.</div></form></div>`);setTimeout(()=>{const f=$('#guestForm');if(f)f.onsubmit=e=>{e.preventDefault();const n=$('#guestName').value.trim(),m=$('#guestMessage').value.trim();if(!n||!m)return;const old=JSON.parse(localStorage.getItem('suleGuestDrafts')||'[]');old.unshift({name:n,message:m,time:new Date().toISOString()});localStorage.setItem('suleGuestDrafts',JSON.stringify(old.slice(0,20)));$('#guestNotice').textContent='Pesan tersimpan di perangkat ini. Fitur publik akan diaktifkan setelah backend khusus SULE OFFICIAL tersambung.';f.reset()}},0)}'''
+          s=s[:start]+new+s[end:]
+          p.write_text(s)
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet || git commit -m 'Keep guestbook inside SULE OFFICIAL'
+          git push
