@@ -1,0 +1,32 @@
+name: Finalize Hero Caption Gold
+on:
+  push:
+    paths: ['.github/workflows/finalize-hero-caption-gold.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Match hero caption to Legenda Kenangan gold
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old='.sig,.cap{position:absolute;right:5%;z-index:5;pointer-events:none;font-family:Cinzel,serif;font-weight:600;background:var(--gold);background-size:230% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 7px #ffb000);text-shadow:none;animation:shine 5s linear infinite;letter-spacing:.02em}.sig{bottom:8%;font-size:48px}.cap{bottom:3%;font-size:27px}'
+          new='.sig,.cap{position:absolute;right:5%;z-index:5;pointer-events:none;font-family:Cinzel,serif;font-style:normal;font-weight:700;text-transform:none;background:var(--gold);background-size:230% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 5px #d98d00) drop-shadow(0 0 10px #ffb000aa);text-shadow:none;animation:shine 4.2s linear infinite;letter-spacing:.035em}.sig{bottom:8.5%;font-size:clamp(30px,4vw,48px)}.cap{bottom:3%;font-size:clamp(18px,2.3vw,27px)}'
+          if old not in s:
+              raise SystemExit('hero caption CSS target not found')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+      - name: Commit and push
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet || git commit -m 'Match hero caption to luxury metallic gold title'
+          git push
