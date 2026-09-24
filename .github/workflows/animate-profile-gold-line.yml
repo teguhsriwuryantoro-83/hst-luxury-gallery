@@ -1,0 +1,36 @@
+name: Animate Profile Gold Line
+on:
+  push:
+    paths: ['.github/workflows/animate-profile-gold-line.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upgrade profile accent to animated metallic gold
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old='.profile-description{font-size:1rem!important;line-height:1.65!important;color:#d1d5db!important;border-left:3px solid #d4af37;padding:3px 0 3px 14px;margin:18px 0 0!important;text-align:left}'
+          new='.profile-description{position:relative;font-size:1rem!important;line-height:1.65!important;color:#d1d5db!important;border-left:0;padding:3px 0 3px 17px;margin:18px 0 0!important;text-align:left}.profile-description:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:999px;background:linear-gradient(180deg,#6f3d00 0%,#9b5c00 14%,#d98d00 30%,#ffe16b 44%,#f1b700 56%,#d98d00 72%,#9b5c00 88%,#6f3d00 100%);background-size:100% 260%;box-shadow:0 0 5px #d98d00,0 0 12px #f1b700aa,0 0 22px #b8730066;animation:profileGoldFlow 2.4s linear infinite,profileGoldPulse 1.7s ease-in-out infinite alternate;will-change:background-position,filter}'
+          if old not in s:
+              raise SystemExit('profile-description CSS target not found')
+          s=s.replace(old,new,1)
+          marker='@keyframes shine{to{background-position:-230% 0}}'
+          addition='@keyframes profileGoldFlow{0%{background-position:0 -160%}100%{background-position:0 160%}}@keyframes profileGoldPulse{from{filter:brightness(.9)}to{filter:brightness(1.45)}}'
+          if addition not in s:
+              s=s.replace(marker,addition+marker,1)
+          p.write_text(s)
+          PY
+      - name: Commit and push
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet || git commit -m 'Animate profile metallic gold accent'
+          git push
