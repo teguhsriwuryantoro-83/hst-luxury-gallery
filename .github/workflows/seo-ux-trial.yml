@@ -1,0 +1,35 @@
+name: SEO UX Trial
+on:
+  push:
+    paths: ['.github/workflows/seo-ux-trial.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply safe SEO and branding improvements
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          s=s.replace('<title>SULE OFFICIAL | Legenda & Kenangan</title>', '''<title>SULE OFFICIAL - Gallery & Memories | Hj. Sulaiman Toha</title><meta name="description" content="Arsip visual perjalanan, kebersamaan, dan momen berharga Hj. Sulaiman Toha di Caruban, Jawa Timur."><meta name="robots" content="index,follow"><link rel="canonical" href="https://teguhsriwuryantoro-83.github.io/hst-luxury-gallery/"><meta property="og:type" content="website"><meta property="og:locale" content="id_ID"><meta property="og:title" content="SULE OFFICIAL - Gallery & Memories"><meta property="og:description" content="Arsip visual perjalanan dan momen kenangan Hj. Sulaiman Toha."><meta property="og:url" content="https://teguhsriwuryantoro-83.github.io/hst-luxury-gallery/"><meta property="og:image" content="https://teguhsriwuryantoro-83.github.io/hst-luxury-gallery/assets/images/hero.jpg"><meta property="og:image:alt" content="SULE OFFICIAL - Gallery & Memories"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="SULE OFFICIAL - Gallery & Memories"><meta name="twitter:description" content="Arsip visual perjalanan dan momen kenangan Hj. Sulaiman Toha."><meta name="twitter:image" content="https://teguhsriwuryantoro-83.github.io/hst-luxury-gallery/assets/images/hero.jpg">''',1)
+          s=s.replace('<small>GALLERY & MEMORIES</small>','<small>HST LUXURY GALLERY • GALLERY & MEMORIES</small>',1)
+          # Improve semantic guestbook trigger without changing modal UX.
+          s=s.replace('<a href="#" id="navGuest">BUKU TAMU</a>','<a href="#bukutamu" id="navGuest" aria-controls="modal" aria-haspopup="dialog">BUKU TAMU</a>',1)
+          # Give the existing modal a stable semantic target; JS still opens it as before.
+          s=s.replace('<div class="modal" id="modal" aria-hidden="true">','<div class="modal" id="modal" aria-hidden="true" role="dialog" aria-modal="true"><span id="bukutamu" aria-hidden="true"></span>',1)
+          # Add decoding hint to dynamically generated gallery images while preserving lazy loading.
+          s=s.replace('loading="lazy" src="assets/images/${x}"','loading="lazy" decoding="async" src="assets/images/${x}"')
+          p.write_text(s)
+          PY
+      - name: Commit and push
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet || git commit -m 'Improve SEO social preview branding and accessibility'
+          git push
